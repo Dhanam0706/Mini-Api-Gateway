@@ -179,8 +179,32 @@ fastify.get("/api/orders", async (req, reply) => {
     return reply.status(500).send({ error: "Order service crashed" });
   }
 });
+fastify.post("/api/users/update", async (req, reply) => {
+  try {
+    const apiKey = req.headers["x-api-key"] || "admin";
+    const cacheKey = `users_${apiKey}`;
+    
+    // Deletes the entry from Redis
+    await client.del(cacheKey);
+    
+    return { success: true, message: "User cache cleared" };
+  } catch (err) {
+    req.log.error(err);
+    return reply.code(500).send({ error: "Redis error" });
+  }
+});
+fastify.post("/api/orders/update", async (req, reply) => {
+  try {
+    const apiKey = req.headers["x-api-key"] || "admin";
+    const cacheKey = `orders_${apiKey}`;
+    await client.del(cacheKey);
+    return { success: true, message: "Order cache cleared" };
+  } catch (err) {
+    req.log.error(err);
+    return reply.code(500).send({ error: "Redis error" });
+  }
+});
 
-// --- SERVER START ---
 fastify.ready(() => {
   console.log("--- REGISTERED ROUTES ---");
   console.log(fastify.printRoutes());
@@ -191,4 +215,5 @@ fastify.listen({ port: PORT, host: '0.0.0.0' }, (err) => {
     fastify.log.error(err);
     process.exit(1);
   }
+
 });
